@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKP (Terima Konseling Problematik) - Lokal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-icon { transition: all 0.2s ease-in-out; }
+        .sidebar-icon:hover { background-color: #3b82f6; color: white; }
+        [x-cloak] { display: none !important; }
+        .whitespace-pre-wrap { white-space: pre-wrap; }
+    </style>
+</head>
+<body class="bg-gray-200 antialiased">
+
+    <!-- Container Utama -->
+    <div id="app" class="h-screen flex flex-col">
+
+        <!-- Layar Login - Latar belakang PUTIH -->
+        <div id="login-screen" class="flex items-center justify-center h-full bg-white">
+            <div class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg text-center border border-gray-100">
+                <div>
+                    <i class="fas fa-hands-helping fa-3x text-blue-500"></i>
+                    <h2 class="mt-4 text-3xl font-bold text-gray-900">
+                        Selamat Datang di TKP Lokal
+                    </h2>
+                    <p class="mt-2 text-gray-600">
+                        Pilih peran Anda untuk masuk ke sistem.
+                    </p>
+                </div>
+                <div class="space-y-4">
+                    <button onclick="login('siswa')" class="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-user-graduate"></i> Masuk sebagai Siswa
+                    </button>
+                    <button onclick="openModal('guru-password-modal')" class="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors">
+                        <i class="fas fa-chalkboard-teacher"></i> Masuk sebagai Guru BK
+                    </button>
+                    <button onclick="login('orangtua')" class="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold rounded-lg text-white bg-purple-600 hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-user-shield"></i> Masuk sebagai Orang Tua
+                    </button>
+                    <button onclick="openModal('admin-password-modal')" class="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold rounded-lg text-white bg-gray-800 hover:bg-gray-900 transition-colors">
+                        <i class="fas fa-user-cog"></i> Masuk sebagai Admin
+                    </button>
+                </div>
+                 <p id="login-error" class="text-sm text-red-600 h-6 mt-2"></p> 
+                 <p id="auth-status" class="text-xs text-gray-500 pt-4">Mode Lokal: Database menggunakan Local Storage.</p>
+            </div>
+        </div>
+
+        <!-- Tampilan Aplikasi Utama (Setelah Login) -->
+        <div id="main-app" class="hidden flex h-full">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-white shadow-md flex flex-col">
+                <div class="p-6 text-center border-b">
+                    <h1 class="text-2xl font-bold text-blue-600"><i class="fas fa-hands-helping"></i> TKP</h1>
+                    <p id="user-role-display" class="text-sm text-gray-500 mt-1 capitalize"></p>
+                </div>
+                <nav id="sidebar-nav" class="flex-1 p-4 space-y-2">
+                    <!-- Navigasi dinamis -->
+                </nav>
+                <div class="p-4 border-t">
+                     <p class="text-xs text-gray-600">ID Sesi:</p>
+                     <p id="user-id-display" class="text-xs text-gray-500 break-words"></p>
+                    <button onclick="logout()" class="w-full mt-4 flex items-center justify-center gap-2 py-2 px-4 font-semibold rounded-lg text-red-600 bg-red-100 hover:bg-red-200 transition-colors">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Konten Utama - Latar belakang PUTIH -->
+            <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-white">
+                
+                <!-- Konten dinamis akan ditampilkan di sini -->
+                <div id="content-area">
+                    <!-- Dashboard -->
+                    <div id="dashboard-view" class="page-view"></div>
+                    
+                    <!-- Profil (Placeholder) -->
+                    <div id="profil-view" class="page-view hidden">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-800">Profil Saya</h2>
+                        <div class="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
+                            <p>Fitur profil akan menampilkan detail pengguna: **${userName}** dengan ID **${userId}**.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- View lainnya -->
+                    <div id="jadwal-view" class="page-view hidden"></div>
+                    <div id="materi-view" class="page-view hidden"></div>
+                    <div id="laporan-view" class="page-view hidden"></div>
+                    <div id="kegiatan-view" class="page-view hidden"></div>
+                    <div id="kelola-user-view" class="page-view hidden"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Modal Booking Janji Temu -->
+    <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold mb-4">Buat Janji Konseling</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="counselor-select" class="block text-sm font-medium text-gray-700">Pilih Guru BK</label>
+                    <select id="counselor-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div>
+                    <label for="booking-date" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                    <input type="date" id="booking-date" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="booking-topic" class="block text-sm font-medium text-gray-700">Topik Konseling</label>
+                    <textarea id="booking-topic" rows="3" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Kesulitan belajar, masalah pertemanan, rencana karir, dll."></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('booking-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="submitBooking()" class="py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700">Ajukan Janji</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Materi BK -->
+    <div id="material-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl">
+            <h3 id="material-modal-title" class="text-xl font-bold mb-4">Buat Materi Baru</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="material-title" class="block text-sm font-medium text-gray-700">Judul Materi</label>
+                    <input type="text" id="material-title" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Tips Manajemen Stres">
+                </div>
+                <div>
+                    <label for="material-content" class="block text-sm font-medium text-gray-700">Isi Materi</label>
+                    <textarea id="material-content" rows="8" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Tulis konten edukatif di sini..."></textarea>
+                </div>
+                <input type="hidden" id="material-doc-id">
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('material-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="submitMaterial()" class="py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700">Simpan Materi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Laporan/Keluhan -->
+    <div id="report-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold mb-4">Ajukan Laporan/Keluhan Baru</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="report-type" class="block text-sm font-medium text-gray-700">Jenis Laporan</label>
+                    <select id="report-type" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm">
+                        <option value="Kehilangan Barang">Kehilangan Barang</option>
+                        <option value="Pembullyan">Pembullyan</option>
+                        <option value="Keluhan Individu">Keluhan Individu</option>
+                        <option value="Keluhan Kelompok">Keluhan Kelompok</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="report-subject" class="block text-sm font-medium text-gray-700">Subjek (Singkat)</label>
+                    <input type="text" id="report-subject" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Dompet hilang di kantin">
+                </div>
+                <div>
+                    <label for="report-details" class="block text-sm font-medium text-gray-700">Detail Laporan</label>
+                    <textarea id="report-details" rows="5" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Jelaskan secara rinci kejadian atau keluhan Anda."></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('report-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="submitReport()" class="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700">Kirim Laporan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kegiatan Sekolah -->
+    <div id="activity-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl">
+            <h3 id="activity-modal-title" class="text-xl font-bold mb-4">Buat Kegiatan Baru</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="activity-title" class="block text-sm font-medium text-gray-700">Nama Kegiatan</label>
+                    <input type="text" id="activity-title" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Contoh: Lomba Kebersihan Kelas">
+                </div>
+                <div>
+                    <label for="activity-date" class="block text-sm font-medium text-gray-700">Tanggal Kegiatan</label>
+                    <input type="date" id="activity-date" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="activity-content" class="block text-sm font-medium text-gray-700">Deskripsi/Detail</label>
+                    <textarea id="activity-content" rows="5" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm" placeholder="Jelaskan detail, tujuan, dan sasaran kegiatan."></textarea>
+                </div>
+                <input type="hidden" id="activity-doc-id">
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('activity-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="submitActivity()" class="py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan Kegiatan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Password Guru BK -->
+    <div id="guru-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Login Guru BK</h3>
+            <p class="text-sm text-gray-600 mb-4">Kata sandi: <span class="font-bold">bismillah</span></p>
+            <div>
+                <label for="guru-password-input" class="block text-sm font-medium text-gray-700">Kata Sandi</label>
+                <input type="password" id="guru-password-input" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <p id="guru-password-error" class="text-red-600 text-sm mt-2 h-5"></p> 
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('guru-password-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="handleGuruLogin()" class="py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Password Admin -->
+    <div id="admin-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Login Admin</h3>
+            <p class="text-sm text-gray-600 mb-4">Kata sandi: <span class="font-bold">admin123</span></p>
+            <div>
+                <label for="admin-password-input" class="block text-sm font-medium text-gray-700">Kata Sandi</label>
+                <input type="password" id="admin-password-input" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <p id="admin-password-error" class="text-red-600 text-sm mt-2 h-5"></p> 
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeModal('admin-password-modal')" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                <button onclick="handleAdminLogin()" class="py-2 px-4 bg-gray-800 text-white rounded-md hover:bg-gray-900">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        
+        // --- DATA LOKAL & HELPER STORAGE ---
+        let userRole = null;
+        let userId = null; // ID unik sesi (simulasi UID)
+        let userName = null;
+        let users = [];
+        let appointments = [];
+        let materials = []; 
+        let reports = [];
+        let activities = [];
+
+        const loginScreen = document.getElementById('login-screen');
+        const mainApp = document.getElementById('main-app');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        let quoteInterval; 
+
+        // Initial Data Load/Save Functions
+        function loadData() {
+            try {
+                users = JSON.parse(localStorage.getItem('tkp_users')) || [];
+                appointments = JSON.parse(localStorage.getItem('tkp_appointments')) || [];
+                materials = JSON.parse(localStorage.getItem('tkp_materials')) || [];
+                reports = JSON.parse(localStorage.getItem('tkp_reports')) || [];
+                activities = JSON.parse(localStorage.getItem('tkp_activities')) || [];
+            } catch (e) {
+                console.error("Gagal memuat data dari LocalStorage:", e);
+                // Reset data jika ada kerusakan
+                users = [];
+                appointments = [];
+                materials = [];
+                reports = [];
+                activities = [];
+                saveData();
+            }
+        }
+        
+        function saveData() {
+            localStorage.setItem('tkp_users', JSON.stringify(users));
+            localStorage.setItem('tkp_appointments', JSON.stringify(appointments));
+            localStorage.setItem('tkp_materials', JSON.stringify(materials));
+            localStorage.setItem('tkp_reports', JSON.stringify(reports));
+            localStorage.setItem('tkp_activities', JSON.stringify(activities));
+        }
+
+        // Generate a simple unique ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+
+        // Data Kutipan Filosofis Tak Terbatas
+        const philosophicalQuotes = [
+            "Pendidikan adalah senjata paling mematikan di dunia, karena dengan pendidikan, Anda dapat mengubah dunia. - Nelson Mandela",
+            "Mimpi-mimpi terbesar dimulai dari pikiran yang tenang. - Dalai Lama",
+            "Masa depan adalah milik mereka yang percaya pada keindahan mimpi-mimpi mereka. - Eleanor Roosevelt",
+            "Jadilah perubahan yang ingin kamu lihat di dunia. - Mahatma Gandhi",
+            "Hidup adalah 10% apa yang terjadi pada kita dan 90% bagaimana kita bereaksi terhadapnya. - Charles R. Swindoll",
+            "Kegagalan adalah kesempatan untuk memulai lagi dengan lebih cerdas. - Henry Ford",
+            "Kebaikan adalah bahasa yang dapat didengar oleh orang tuli dan dilihat oleh orang buta. - Mark Twain",
+            "Bukan seberapa banyak yang kita miliki, tapi seberapa banyak yang kita nikmati, itulah kebahagiaan. - Charles Spurgeon",
+            "Satu-satunya cara untuk melakukan pekerjaan hebat adalah mencintai apa yang Anda lakukan. - Steve Jobs",
+            "Waktu yang Anda nikmati sia-sia bukanlah waktu yang sia-sia. - Marthe Troly-Curtin",
+            "Kehidupan yang tak teruji tidak layak dijalani. - Socrates",
+            "Jika Anda ingin mengangkat diri Anda, angkat orang lain. - Booker T. Washington",
+            "Ketakutan adalah penjara. Harapan adalah kunci. - Stephen King",
+            "Kesabaran bukanlah kemampuan untuk menunggu, melainkan kemampuan untuk mempertahankan sikap baik saat menunggu. - Joyce Meyer",
+            "Perubahan adalah hukum kehidupan. Dan mereka yang hanya melihat masa lalu atau masa kini pasti akan kehilangan masa depan. - John F. Kennedy"
+        ];
+        
+        // --- FUNGSI TAMPILAN (RENDERING) ---
+        const navLinks = {
+            siswa: [
+                { name: 'Dashboard', icon: 'fa-tachometer-alt', view: 'dashboard-view' },
+                { name: 'Profil', icon: 'fa-user-circle', view: 'profil-view' },
+                { name: 'Jadwal Konseling', icon: 'fa-calendar-alt', view: 'jadwal-view' },
+                { name: 'Materi BK', icon: 'fa-book', view: 'materi-view' },
+                { name: 'Kegiatan Sekolah', icon: 'fa-running', view: 'kegiatan-view' }, 
+                { name: 'Laporan & Keluhan', icon: 'fa-flag', view: 'laporan-view' }, 
+            ],
+            guru: [
+                { name: 'Dashboard', icon: 'fa-tachometer-alt', view: 'dashboard-view' },
+                { name: 'Profil', icon: 'fa-user-tie', view: 'profil-view' },
+                { name: 'Jadwal Konseling', icon: 'fa-calendar-check', view: 'jadwal-view' },
+                { name: 'Materi BK', icon: 'fa-book', view: 'materi-view' },
+                { name: 'Kegiatan Sekolah', icon: 'fa-running', view: 'kegiatan-view' },
+                { name: 'Laporan & Keluhan', icon: 'fa-flag', view: 'laporan-view' }, 
+            ],
+            orangtua: [
+                { name: 'Dashboard', icon: 'fa-tachometer-alt', view: 'dashboard-view' },
+                { name: 'Profil Anak', icon: 'fa-child', view: 'profil-view' },
+                { name: 'Materi BK', icon: 'fa-book', view: 'materi-view' },
+                { name: 'Kegiatan Sekolah', icon: 'fa-running', view: 'kegiatan-view' },
+                { name: 'Laporan & Keluhan', icon: 'fa-flag', view: 'laporan-view' }, 
+            ],
+            admin: [
+                { name: 'Dashboard', icon: 'fa-tachometer-alt', view: 'dashboard-view' },
+                { name: 'Kelola User', icon: 'fa-users-cog', view: 'kelola-user-view' },
+            ]
+        };
+
+        function renderSidebar(role) {
+            sidebarNav.innerHTML = '';
+            navLinks[role].forEach(link => {
+                const button = document.createElement('button');
+                button.className = 'w-full flex items-center gap-3 py-2 px-4 rounded-lg text-gray-700 hover:bg-blue-500 hover:text-white transition-colors';
+                button.innerHTML = `<i class="fas ${link.icon} w-6 text-center"></i><span>${link.name}</span>`;
+                button.onclick = () => switchView(link.view);
+                sidebarNav.appendChild(button);
+            });
+        }
+        
+        function switchView(viewId) {
+            document.querySelectorAll('.page-view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            // Clear previous quote cycle
+            if (quoteInterval) clearInterval(quoteInterval);
+
+            // Panggil fungsi render yang sesuai
+            if (viewId === 'dashboard-view') {
+                renderDashboard(userRole);
+                startQuoteCycle();
+            } else if (viewId === 'profil-view') {
+                document.getElementById('profil-view').innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4 text-gray-800">Profil Saya</h2>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
+                        <p>Selamat datang, <span class="font-bold text-blue-600">${userName}</span>.</p>
+                        <p>Peran Anda: <span class="font-bold">${userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span></p>
+                        <p class="text-sm text-gray-500 mt-2">ID Sesi Lokal: ${userId}</p>
+                    </div>
+                `;
+            } else if (viewId === 'materi-view') {
+                renderMateriView();
+                filterMaterials(document.getElementById('material-search')?.value || '');
+            } else if (viewId === 'jadwal-view') {
+                renderJadwal(userRole);
+            } else if (viewId === 'laporan-view') {
+                renderLaporanView(userRole);
+            } else if (viewId === 'kegiatan-view') {
+                renderKegiatanView(userRole);
+            } else if (viewId === 'kelola-user-view') {
+                renderKelolaUserView();
+            }
+        }
+        
+        function startQuoteCycle() {
+            const quoteElement = document.getElementById('philosophical-quote');
+            if (!quoteElement) return;
+
+            const displayQuote = () => {
+                const randomIndex = Math.floor(Math.random() * philosophicalQuotes.length);
+                const quote = philosophicalQuotes[randomIndex];
+                quoteElement.innerHTML = `<i class="fas fa-quote-left mr-3 text-blue-400"></i><span class="italic">${quote}</span><i class="fas fa-quote-right ml-3 text-blue-400"></i>`;
+            };
+
+            displayQuote(); // Initial quote
+            quoteInterval = setInterval(displayQuote, 10000); // Change every 10 seconds
+        }
+
+
+        function renderDashboard(role) {
+            const view = document.getElementById('dashboard-view');
+            
+            let content = `<h2 class="text-3xl font-bold mb-6 text-gray-800">Dashboard ${role.charAt(0).toUpperCase() + role.slice(1)}</h2>`;
+            
+            // Kotak Kutipan Filosofis
+            content += `
+                <div class="bg-white p-6 mb-6 rounded-xl shadow-lg border-l-4 border-blue-500 transition-shadow duration-300">
+                    <div id="philosophical-quote" class="text-lg font-medium text-gray-700 text-center animate-pulse">
+                        Memuat kata-kata bijak...
+                    </div>
+                </div>
+            `;
+            
+            if (role === 'siswa') {
+                content += `
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                            <h3 class="font-bold text-lg text-blue-600">Jadwal Konseling Mendatang</h3>
+                            <p class="text-gray-600 mt-2">Anda belum memiliki jadwal. Buat janji di halaman Jadwal Konseling.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                            <h3 class="font-bold text-lg text-green-600">Progres Saya</h3>
+                            <p class="text-gray-600 mt-2">Ringkasan perkembangan dan catatan dari Guru BK akan tampil di sini.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (role === 'guru') {
+                const pendingRequests = appointments.filter(appt => appt.counselorId === userId && appt.status === 'pending');
+                const pendingRequestsHtml = pendingRequests.length > 0 
+                    ? pendingRequests.map(appt => `
+                        <div class="border rounded-lg p-3 bg-yellow-50">
+                            <p><span class="font-semibold">${appt.studentName}</span> meminta sesi konseling.</p>
+                            <p class="text-sm text-gray-600">Topik: ${appt.topic}</p>
+                            <p class="text-sm text-gray-600">Tanggal: ${appt.date}</p>
+                            <div class="mt-2 space-x-2">
+                                <button onclick="updateAppointmentStatus('${appt.id}', 'approved')" class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-md hover:bg-green-200">Setujui</button>
+                                <button onclick="updateAppointmentStatus('${appt.id}', 'rejected')" class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-md hover:bg-red-200">Tolak</button>
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<p class="text-gray-500">Tidak ada permintaan tertunda saat ini.</p>';
+                
+                content += `
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4 text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i>Permintaan Janji Temu Tertunda (${pendingRequests.length})</h3>
+                        <div id="pending-requests" class="space-y-3">
+                           ${pendingRequestsHtml}
+                        </div>
+                    </div>
+                `;
+            } else if (role === 'admin') {
+                content += `
+                    <div class="grid md:grid-cols-3 gap-6">
+                         <div class="bg-white p-6 rounded-xl shadow text-center border border-gray-200">
+                            <h3 class="font-bold text-lg text-blue-600">Total Pengguna</h3>
+                            <p id="total-users-stat" class="text-4xl font-bold mt-2">${users.length}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow text-center border border-gray-200">
+                            <h3 class="font-bold text-lg text-red-600">Total Laporan</h3>
+                            <p id="total-reports-stat" class="text-4xl font-bold mt-2">${reports.length}</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-xl shadow text-center border border-gray-200">
+                            <h3 class="font-bold text-lg text-green-600">Total Materi</h3>
+                            <p id="total-materials-stat" class="text-4xl font-bold mt-2">${materials.length}</p>
+                        </div>
+                    </div>
+                `;
+            } else { // orangtua
+                 content += `
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                        <h3 class="font-bold text-lg text-purple-600">Notifikasi Terbaru</h3>
+                        <p class="text-gray-600 mt-2">Belum ada notifikasi baru mengenai perkembangan anak Anda.</p>
+                    </div>
+                `;
+            }
+            view.innerHTML = content;
+        }
+
+        function renderMateriView() {
+            const view = document.getElementById('materi-view');
+            const createButton = userRole === 'guru' ? `
+                <button onclick="openMaterialModal()" class="py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Buat Materi Baru
+                </button>
+            ` : '';
+            
+            view.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Materi Bimbingan Konseling</h2>
+                    ${createButton}
+                </div>
+                
+                <div class="mb-6">
+                    <input type="text" id="material-search" onkeyup="filterMaterials(this.value)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Cari materi berdasarkan judul atau isi...">
+                </div>
+
+                <div id="material-list" class="space-y-4">
+                    <p class="text-gray-500">Memuat daftar materi...</p>
+                </div>
+            `;
+             filterMaterials(document.getElementById('material-search')?.value || '');
+        }
+        
+        // --- START: FUNGSI LAPORAN & KELUHAN (LOKAL) ---
+        function renderLaporanView(role) {
+            const view = document.getElementById('laporan-view');
+            let content = `<h2 class="text-3xl font-bold mb-6 text-gray-800">Laporan & Keluhan Sekolah</h2>`;
+            
+            if (role !== 'guru') { // Siswa & Orang Tua
+                content += `
+                    <div class="flex justify-end items-center mb-6">
+                        <button onclick="openModal('report-modal')" class="py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-colors">
+                            <i class="fas fa-exclamation-circle mr-2"></i>Ajukan Laporan Baru
+                        </button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4 text-red-600">Laporan yang Saya Ajukan</h3>
+                        <div id="user-reports-list" class="space-y-4">
+                            ${renderUserReports()}
+                        </div>
+                    </div>
+                `;
+            } else { // Guru BK
+                 content += `
+                    <div class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4 text-red-600">Semua Laporan & Keluhan Masuk (${reports.length})</h3>
+                        <div id="all-reports-list" class="space-y-4">
+                            ${renderAllReports()}
+                        </div>
+                    </div>
+                `;
+            }
+            view.innerHTML = content;
+        }
+
+        function renderUserReports() {
+            const userReports = reports.filter(r => r.reporterId === userId);
+            if(userReports.length === 0) {
+                return '<p class="text-gray-500">Anda belum pernah mengajukan laporan.</p>';
+            }
+            return userReports.map(report => {
+                const statusBadge = getReportStatusBadge(report.status);
+                return `
+                    <div class="border rounded-lg p-4 flex justify-between items-start bg-red-50">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">${report.type} - ${report.subject}</h4>
+                            <p class="text-sm text-gray-600">Tanggal: ${new Date(report.createdAt).toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <div class="text-right">
+                            ${statusBadge}
+                            <button onclick="showReportDetail('${report.id}')" class="mt-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-md px-2 py-1 hover:bg-gray-200">Detail</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderAllReports() {
+             if(reports.length === 0) {
+                return '<p class="text-gray-500">Tidak ada laporan yang masuk.</p>';
+            }
+            return reports.map(report => {
+                const statusBadge = getReportStatusBadge(report.status);
+                const reporterInfo = `<p class="text-xs text-gray-500 mt-1">Pelapor: ${report.reporterName}</p>`;
+                let actionButton = '';
+                if (report.status === 'pending') {
+                    actionButton = `<button onclick="updateReportStatus('${report.id}', 'in-progress')" class="mt-2 text-xs font-semibold text-blue-700 bg-blue-100 rounded-md px-2 py-1 hover:bg-blue-200">Proses</button>`;
+                } else if (report.status === 'in-progress') {
+                    actionButton = `<button onclick="updateReportStatus('${report.id}', 'resolved')" class="mt-2 text-xs font-semibold text-green-700 bg-green-100 rounded-md px-2 py-1 hover:bg-green-200">Selesaikan</button>`;
+                }
+
+                return `
+                    <div class="border rounded-lg p-4 flex justify-between items-start bg-red-50">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">${report.type} - ${report.subject}</h4>
+                            ${reporterInfo}
+                            <p class="text-sm text-gray-600">Tanggal: ${new Date(report.createdAt).toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <div class="text-right">
+                            ${statusBadge}
+                            ${actionButton}
+                            <button onclick="showReportDetail('${report.id}')" class="mt-2 text-xs font-semibold text-gray-700 bg-gray-100 rounded-md px-2 py-1 hover:bg-gray-200">Detail</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        window.submitReport = () => {
+            const type = document.getElementById('report-type').value;
+            const subject = document.getElementById('report-subject').value.trim();
+            const details = document.getElementById('report-details').value.trim();
+
+            if(!type || !subject || !details) {
+                console.error("Harap isi semua kolom laporan."); 
+                return;
+            }
+
+            const newReport = {
+                id: generateId(),
+                type: type,
+                subject: subject,
+                details: details,
+                reporterId: userId,
+                reporterRole: userRole,
+                reporterName: userName,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            reports.push(newReport);
+            saveData();
+            closeModal('report-modal');
+            console.log("Laporan berhasil diajukan."); 
+            // Re-render the view to reflect change
+            switchView('laporan-view');
+        }
+        
+        window.updateReportStatus = (reportId, status) => {
+             const index = reports.findIndex(r => r.id === reportId);
+             if (index !== -1) {
+                 reports[index].status = status;
+                 saveData();
+                 console.log(`Status laporan diubah menjadi ${status}.`);
+                 // Re-render the view
+                 switchView('laporan-view');
+                 // Re-render dashboard if guru to update pending count
+                 if (userRole === 'guru') switchView('dashboard-view');
+             }
+        }
+        
+        window.showReportDetail = (reportId) => {
+            const report = reports.find(r => r.id === reportId);
+            if (report) {
+                 alert(`DETAIL LAPORAN:\n\nJenis: ${report.type}\nSubjek: ${report.subject}\nPelapor: ${report.reporterName}\nStatus: ${report.status.toUpperCase()}\nTanggal: ${new Date(report.createdAt).toLocaleString('id-ID')}\n\nDetail:\n${report.details}`);
+            }
+        }
+        
+        function getReportStatusBadge(status) {
+             switch(status) {
+                case 'pending': return '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Tertunda</span>';
+                case 'in-progress': return '<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Diproses</span>';
+                case 'resolved': return '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Selesai</span>';
+                default: return '';
+            }
+        }
+        // --- END: FUNGSI LAPORAN & KELUHAN (LOKAL) ---
+
+        // --- START: FUNGSI KELOLA USER (ADMIN LOKAL) ---
+        function renderKelolaUserView() {
+            const view = document.getElementById('kelola-user-view');
+            view.innerHTML = `
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">Kelola Pengguna Sistem (${users.length})</h2>
+                <div class="bg-white p-6 rounded-xl shadow overflow-x-auto border border-gray-200">
+                    <table class="w-full text-sm text-left text-gray-700">
+                        <thead class="text-xs text-gray-800 uppercase bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Nama Pengguna</th>
+                                <th scope="col" class="px-6 py-3">Peran (Role)</th>
+                                <th scope="col" class="px-6 py-3">ID Sesi</th>
+                                <th scope="col" class="px-6 py-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-list-table">
+                            ${renderUserTableRows()}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderUserTableRows() {
+            if (users.length === 0) {
+                return '<tr><td colspan="4" class="text-center p-4">Tidak ada pengguna terdaftar (Hanya sesi yang sudah login).</td></tr>';
+            }
+
+            return users.map(user => {
+                const isCurrentUser = user.id === userId;
+                const roleOptions = ['siswa', 'guru', 'orangtua', 'admin']
+                    .map(role => `<option value="${role}" ${user.role === role ? 'selected' : ''}>${role}</option>`)
+                    .join('');
+                
+                return `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">${user.name}</td>
+                        <td class="px-6 py-4">
+                            <select onchange="updateUserRole('${user.id}', this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" ${isCurrentUser ? 'disabled' : ''}>
+                                ${roleOptions}
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 font-mono text-xs">${user.id}</td>
+                        <td class="px-6 py-4 text-center">
+                            <button onclick="deleteUser('${user.id}', '${user.name}')" class="font-medium text-red-600 hover:underline disabled:text-gray-400" ${isCurrentUser ? 'disabled' : ''} title="${isCurrentUser ? 'Tidak dapat menghapus sesi sendiri' : 'Hapus pengguna'}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        window.updateUserRole = (targetUserId, newRole) => {
+            if (userRole !== 'admin') return;
+            const index = users.findIndex(u => u.id === targetUserId);
+            if (index !== -1) {
+                 users[index].role = newRole;
+                 saveData();
+                 console.log(`Peran untuk user ${targetUserId} berhasil diubah menjadi ${newRole}.`);
+                 // Re-render
+                 switchView('kelola-user-view');
+            }
+        };
+
+        window.deleteUser = (targetUserId, targetUserName) => {
+            if (userRole !== 'admin') return;
+            if (confirm(`Apakah Anda yakin ingin menghapus sesi pengguna "${targetUserName}" (${targetUserId})? Tindakan ini tidak dapat diurungkan.`)) {
+                users = users.filter(u => u.id !== targetUserId);
+                saveData();
+                console.log(`Sesi pengguna "${targetUserName}" berhasil dihapus.`);
+                // Re-render
+                switchView('kelola-user-view');
+            }
+        };
+        // --- END: FUNGSI KELOLA USER (ADMIN LOKAL) ---
+
+        // --- START: FUNGSI KEGIATAN SEKOLAH (LOKAL) ---
+        function renderKegiatanView(role) {
+            const view = document.getElementById('kegiatan-view');
+            const createButton = role === 'guru' ? `
+                <button onclick="openActivityModal()" class="py-2 px-4 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Buat Kegiatan Baru
+                </button>
+            ` : '';
+            
+            view.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800">Agenda Kegiatan Sekolah (${activities.length})</h2>
+                    ${createButton}
+                </div>
+                
+                <div id="activity-list" class="space-y-4">
+                    ${renderActivityList()}
+                </div>
+            `;
+        }
+        
+        function renderActivityList() {
+            if(activities.length === 0) {
+                return '<p class="text-gray-500 bg-gray-50 p-4 rounded-lg border border-gray-200">Belum ada kegiatan yang terjadwal.</p>';
+            }
+            
+            return activities.map(activity => {
+                const isGuru = userRole === 'guru';
+                const dateDisplay = new Date(activity.date).toLocaleDateString('id-ID');
+
+                const actionButtons = isGuru ? `
+                    <div class="space-x-2 mt-3 text-right">
+                        <button onclick="openActivityModal('${activity.id}')" class="text-sm text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i> Edit</button>
+                        <button onclick="deleteActivity('${activity.id}', '${activity.title}')" class="text-sm text-red-600 hover:text-red-800"><i class="fas fa-trash"></i> Hapus</button>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-orange-500">
+                        <h4 class="text-xl font-bold text-gray-900">${activity.title}</h4>
+                        <p class="text-sm text-orange-600 mb-3"><i class="fas fa-calendar-alt mr-1"></i> Tanggal: ${dateDisplay}</p>
+                        <div class="text-gray-700 whitespace-pre-wrap">${activity.content.substring(0, 200)}${activity.content.length > 200 ? '...' : ''}</div>
+                        ${actionButtons}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        window.openActivityModal = (activityId = null) => {
+            if (userRole !== 'guru') return; 
+
+            const modal = document.getElementById('activity-modal');
+            const titleInput = document.getElementById('activity-title');
+            const dateInput = document.getElementById('activity-date');
+            const contentInput = document.getElementById('activity-content');
+            const docIdInput = document.getElementById('activity-doc-id');
+            const modalTitle = document.getElementById('activity-modal-title');
+            
+            if (activityId) {
+                const activity = activities.find(a => a.id === activityId);
+                if (activity) {
+                    modalTitle.textContent = 'Edit Kegiatan Sekolah';
+                    titleInput.value = activity.title;
+                    dateInput.value = activity.date; // already ISO string
+                    contentInput.value = activity.content;
+                    docIdInput.value = activityId;
+                }
+            } else {
+                modalTitle.textContent = 'Buat Kegiatan Baru';
+                titleInput.value = '';
+                dateInput.value = new Date().toISOString().split('T')[0];
+                contentInput.value = '';
+                docIdInput.value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        window.submitActivity = () => {
+            if (userRole !== 'guru') return;
+
+            const title = document.getElementById('activity-title').value.trim();
+            const date = document.getElementById('activity-date').value.trim();
+            const content = document.getElementById('activity-content').value.trim();
+            const activityId = document.getElementById('activity-doc-id').value;
+
+            if (!title || !date || !content) {
+                console.error("Semua kolom kegiatan harus diisi.");
+                return;
+            }
+            
+            const activityData = {
+                title: title,
+                date: date,
+                content: content,
+                authorId: userId,
+                author: userName,
+            };
+
+            if (activityId) {
+                // Update
+                const index = activities.findIndex(a => a.id === activityId);
+                if (index !== -1) {
+                    activities[index] = { ...activities[index], ...activityData };
+                    console.log("Kegiatan berhasil diperbarui.");
+                }
+            } else {
+                // Create
+                activities.push({
+                    id: generateId(),
+                    ...activityData,
+                    createdAt: new Date().toISOString(),
+                });
+                console.log("Kegiatan baru berhasil dibuat.");
+            }
+            saveData();
+            closeModal('activity-modal');
+            switchView('kegiatan-view');
+        }
+        
+        window.deleteActivity = (activityId, title) => {
+            if (userRole !== 'guru') return;
+
+            if (confirm(`Apakah Anda yakin ingin menghapus kegiatan "${title}"?`)) {
+                activities = activities.filter(a => a.id !== activityId);
+                saveData();
+                console.log(`Kegiatan "${title}" berhasil dihapus.`);
+                switchView('kegiatan-view');
+            }
+        }
+        // --- END: FUNGSI KEGIATAN SEKOLAH (LOKAL) ---
+
+        // --- FUNGSI JADWAL KONSSELING (LOKAL) ---
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'pending': return '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Tertunda</span>';
+                case 'approved': return '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Disetujui</span>';
+                case 'rejected': return '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Ditolak</span>';
+                case 'completed': return '<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Selesai</span>';
+                default: return '';
+            }
+        }
+
+        async function setupUser(role) {
+            userRole = role;
+            
+            let user = users.find(u => u.role === role && u.id === localStorage.getItem('tkp_current_user_id'));
+            
+            if (!user) {
+                // Simulate new user session
+                userId = generateId();
+                let name = `User ${userId.substring(0, 5)}`;
+                if (role === 'guru') name = `Guru BK ${userId.substring(0, 5)}`;
+                if (role === 'orangtua') name = `Ortu ${userId.substring(0, 5)}`;
+                if (role === 'admin') name = `Admin ${userId.substring(0, 5)}`;
+                
+                user = { id: userId, role: role, name: name };
+                users.push(user);
+                localStorage.setItem('tkp_current_user_id', userId);
+            } else {
+                userId = user.id;
+            }
+            
+            userName = user.name;
+            localStorage.setItem('tkp_current_role', userRole);
+            saveData();
+            
+            document.getElementById('user-role-display').textContent = `${role.charAt(0).toUpperCase() + role.slice(1)}: ${userName}`; 
+            document.getElementById('user-id-display').textContent = userId;
+            renderSidebar(role);
+            
+            // Initialize all views and switch to dashboard
+            switchView('dashboard-view');
+            
+            loginScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+        }
+
+        function renderJadwal(role) {
+            const view = document.getElementById('jadwal-view');
+            const studentAppointments = appointments.filter(a => a.studentId === userId).map(appt => `
+                 <div class="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
+                    <div>
+                        <p class="font-semibold">${appt.topic}</p>
+                        <p class="text-sm text-gray-600">Tanggal: ${appt.date}</p>
+                    </div>
+                    ${getStatusBadge(appt.status)}
+                </div>
+            `).join('');
+            
+            const counselorAppointments = appointments.filter(a => a.counselorId === userId).map(appt => `
+                <div class="border rounded-lg p-4 flex justify-between items-center bg-gray-50">
+                    <div>
+                        <p class="font-semibold">${appt.topic} - (${appt.studentName})</p>
+                        <p class="text-sm text-gray-600">Tanggal: ${appt.date}</p>
+                    </div>
+                    ${getStatusBadge(appt.status)}
+                </div>
+            `).join('');
+
+            if (role === 'siswa') {
+                view.innerHTML = `
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Jadwal Konseling</h2>
+                        <button onclick="openModal('booking-modal')" class="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Buat Janji Baru
+                        </button>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                        <h3 class="font-bold text-lg mb-4">Riwayat Janji Temu Saya</h3>
+                        <div id="student-appointments" class="space-y-4">
+                            ${studentAppointments || '<p class="text-gray-500">Anda belum memiliki riwayat janji temu.</p>'}
+                        </div>
+                    </div>
+                `;
+                populateCounselors();
+            } else if (role === 'guru') {
+                view.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Kelola Jadwal Konseling</h2>
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
+                         <h3 class="font-bold text-lg mb-4">Semua Janji Temu</h3>
+                         <div id="counselor-appointments" class="space-y-4">
+                             ${counselorAppointments || '<p class="text-gray-500">Anda belum memiliki jadwal janji temu.</p>'}
+                         </div>
+                    </div>
+                `;
+            } else {
+                 view.innerHTML = '<div class="bg-white p-6 rounded-lg shadow border border-gray-200"><p class="text-gray-600">Fitur Jadwal hanya tersedia untuk Siswa dan Guru BK.</p></div>';
+            }
+        }
+
+        function populateCounselors() {
+            const select = document.getElementById('counselor-select');
+            if (!select) return;
+            
+            const counselors = users.filter(u => u.role === 'guru');
+            select.innerHTML = '';
+            
+            if(counselors.length === 0) {
+                 select.innerHTML += `<option value="">Tidak ada Guru BK</option>`;
+            } else {
+                 counselors.forEach((user) => {
+                    select.innerHTML += `<option value="${user.id}">${user.name}</option>`;
+                });
+            }
+        }
+        
+        window.submitBooking = () => {
+            const counselorId = document.getElementById('counselor-select').value;
+            const date = document.getElementById('booking-date').value;
+            const topic = document.getElementById('booking-topic').value;
+
+            if(!counselorId || !date || !topic) {
+                console.error("Harap isi semua kolom."); 
+                return;
+            }
+
+            const newAppt = {
+                id: generateId(),
+                studentId: userId,
+                studentName: userName, 
+                counselorId: counselorId,
+                date: date,
+                topic: topic,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            appointments.push(newAppt);
+            saveData();
+            closeModal('booking-modal');
+            console.log("Permintaan janji temu berhasil diajukan."); 
+            switchView('jadwal-view');
+        }
+        
+        window.updateAppointmentStatus = (apptId, status) => {
+            const index = appointments.findIndex(a => a.id === apptId);
+            if (index !== -1) {
+                 appointments[index].status = status;
+                 saveData();
+                 console.log(`Janji temu telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`);
+                 // Re-render
+                 if (userRole === 'guru') {
+                    switchView('dashboard-view'); // Update dashboard list
+                    renderJadwal('guru'); // Update full list
+                 } else {
+                    switchView('jadwal-view');
+                 }
+            }
+        }
+        
+        // --- FUNGSI MATERI BK (LOKAL) ---
+        window.filterMaterials = (searchTerm) => {
+            const container = document.getElementById('material-list');
+            const lowerCaseSearch = searchTerm.toLowerCase();
+            
+            const filteredMaterials = materials.filter(material => 
+                material.title.toLowerCase().includes(lowerCaseSearch) || 
+                material.content.toLowerCase().includes(lowerCaseSearch) ||
+                material.author.toLowerCase().includes(lowerCaseSearch)
+            );
+
+            if (filteredMaterials.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 bg-gray-50 p-4 rounded-lg border border-gray-200">Tidak ada materi yang ditemukan.</p>';
+                return;
+            }
+            
+            container.innerHTML = filteredMaterials.map(material => {
+                const isGuru = userRole === 'guru';
+                const actionButtons = isGuru ? `
+                    <div class="space-x-2 mt-3 text-right">
+                        <button onclick="openMaterialModal('${material.id}')" class="text-sm text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i> Edit</button>
+                        <button onclick="deleteMaterial('${material.id}', '${material.title}')" class="text-sm text-red-600 hover:text-red-800"><i class="fas fa-trash"></i> Hapus</button>
+                    </div>
+                ` : '';
+                
+                const createdDate = new Date(material.createdAt).toLocaleDateString('id-ID');
+
+                return `
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500">
+                        <h4 class="text-xl font-bold text-gray-900">${material.title}</h4>
+                        <p class="text-sm text-gray-500 mb-3">Oleh: ${material.author} | Dibuat: ${createdDate}</p>
+                        <div class="text-gray-700 whitespace-pre-wrap">${material.content.substring(0, 200)}${material.content.length > 200 ? '...' : ''} <span class="text-blue-500 cursor-pointer" onclick="showMaterialDetail('${material.id}')">[Baca Selengkapnya]</span></div>
+                        ${actionButtons}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.openMaterialModal = (materialId = null) => {
+            if (userRole !== 'guru') return; 
+            const modal = document.getElementById('material-modal');
+            const titleInput = document.getElementById('material-title');
+            const contentInput = document.getElementById('material-content');
+            const docIdInput = document.getElementById('material-doc-id');
+            const modalTitle = document.getElementById('material-modal-title');
+            
+            if (materialId) {
+                const material = materials.find(m => m.id === materialId);
+                if (material) {
+                    modalTitle.textContent = 'Edit Materi BK';
+                    titleInput.value = material.title;
+                    contentInput.value = material.content;
+                    docIdInput.value = materialId;
+                }
+            } else {
+                modalTitle.textContent = 'Buat Materi Baru';
+                titleInput.value = '';
+                contentInput.value = '';
+                docIdInput.value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+        
+        window.submitMaterial = () => {
+            if (userRole !== 'guru') return;
+            const title = document.getElementById('material-title').value.trim();
+            const content = document.getElementById('material-content').value.trim();
+            const materialId = document.getElementById('material-doc-id').value;
+
+            if (!title || !content) {
+                console.error("Judul dan isi materi harus diisi.");
+                return;
+            }
+
+            const materialData = {
+                title: title,
+                content: content,
+                authorId: userId,
+                author: userName,
+            };
+
+            if (materialId) {
+                const index = materials.findIndex(m => m.id === materialId);
+                if (index !== -1) {
+                    materials[index] = { ...materials[index], ...materialData };
+                    console.log("Materi berhasil diperbarui.");
+                }
+            } else {
+                materials.push({
+                    id: generateId(),
+                    ...materialData,
+                    createdAt: new Date().toISOString(),
+                });
+                console.log("Materi baru berhasil dibuat.");
+            }
+            
+            saveData();
+            closeModal('material-modal');
+            filterMaterials(document.getElementById('material-search')?.value || '');
+        }
+        
+        window.deleteMaterial = (materialId, title) => {
+            if (userRole !== 'guru') return;
+            if (confirm(`Apakah Anda yakin ingin menghapus materi "${title}"?`)) {
+                materials = materials.filter(m => m.id !== materialId);
+                saveData();
+                console.log(`Materi "${title}" berhasil dihapus.`);
+                filterMaterials(document.getElementById('material-search')?.value || '');
+            }
+        }
+        
+        window.showMaterialDetail = (materialId) => {
+            const material = materials.find(m => m.id === materialId);
+            if (material) {
+                alert(`DETAIL MATERI:\n\nJudul: ${material.title}\nPenulis: ${material.author}\n\nIsi:\n${material.content}`);
+            }
+        }
+
+        // --- AUTH & WINDOW FUNCTIONS ---
+        window.login = (role) => {
+            const errorElement = document.getElementById('login-error');
+            if (errorElement) errorElement.textContent = '';
+            setupUser(role);
+        };
+
+        window.handleGuruLogin = () => {
+            const passwordInput = document.getElementById('guru-password-input');
+            const password = passwordInput.value;
+            const errorElement = document.getElementById('guru-password-error');
+            
+            if (password === "bismillah") {
+                errorElement.textContent = '';
+                closeModal('guru-password-modal');
+                login('guru');
+                passwordInput.value = '';
+            } else {
+                errorElement.textContent = "Kata sandi yang Anda masukkan salah.";
+                passwordInput.value = ''; 
+            }
+        };
+
+        window.handleAdminLogin = () => {
+            const passwordInput = document.getElementById('admin-password-input');
+            const password = passwordInput.value;
+            const errorElement = document.getElementById('admin-password-error');
+            
+            if (password === "admin123") {
+                errorElement.textContent = '';
+                closeModal('admin-password-modal');
+                login('admin');
+                passwordInput.value = '';
+            } else {
+                errorElement.textContent = "Kata sandi yang Anda masukkan salah.";
+                passwordInput.value = '';
+            }
+        };
+
+        window.logout = () => {
+            if (quoteInterval) clearInterval(quoteInterval);
+            localStorage.removeItem('tkp_current_role');
+            localStorage.removeItem('tkp_current_user_id');
+            userRole = null;
+            userId = null;
+            userName = null;
+            loginScreen.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+            location.reload(); // Reload to start fresh
+        };
+
+        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+        window.closeModal = (id) => {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'guru-password-modal') {
+                document.getElementById('guru-password-input').value = '';
+                document.getElementById('guru-password-error').textContent = '';
+            }
+            if (id === 'admin-password-modal') {
+                document.getElementById('admin-password-input').value = '';
+                document.getElementById('admin-password-error').textContent = '';
+            }
+        };
+
+
+        // Inisialisasi Aplikasi Lokal
+        window.onload = () => {
+            loadData();
+            const storedRole = localStorage.getItem('tkp_current_role');
+            const storedId = localStorage.getItem('tkp_current_user_id');
+            
+            if (storedRole && storedId) {
+                // Find existing user data
+                const user = users.find(u => u.id === storedId);
+                
+                if (user && user.role === storedRole) {
+                    // Re-establish session
+                    userRole = storedRole;
+                    userId = storedId;
+                    userName = user.name;
+                    
+                    document.getElementById('user-role-display').textContent = `${userRole.charAt(0).toUpperCase() + userRole.slice(1)}: ${userName}`;
+                    document.getElementById('user-id-display').textContent = userId;
+                    renderSidebar(userRole);
+                    switchView('dashboard-view');
+                    loginScreen.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    console.log("Sesi lokal dimuat.");
+                    return;
+                }
+            }
+            
+            // If no valid session found, show login screen
+            loginScreen.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
